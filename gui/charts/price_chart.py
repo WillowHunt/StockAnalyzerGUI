@@ -7,11 +7,12 @@ import numpy as np
 
 
 def _visible_data(data, vb):
-    if vb is None:
+    if not data or vb is None:
         return data
     x_min, x_max = vb.viewRange()[0]
-    lo, hi = int(x_min) - 1, int(x_max) + 2
-    return [d for d in data if lo <= d[0] <= hi]
+    lo = max(0, int(x_min) - 1)
+    hi = min(len(data) - 1, int(x_max) + 2)
+    return data[lo:hi + 1]
 
 
 class CandlestickItem(pg.GraphicsObject):
@@ -255,6 +256,14 @@ class PriceChart(QWidget):
         self.selector_plot.clear()
         self.selector_plot.addItem(self.region)
 
+        # Sæt X-range FØR items tilføjes så første paint() kun tegner synlige stave
+        n = len(x)
+        if self._first_load:
+            init_start = max(0, n - 90)
+            self._updating = True
+            self.price_plot.setXRange(init_start, n - 1, padding=0)
+            self._updating = False
+
         chart = self.chart_type.currentText()
         if chart == "Linje":
             self.price_plot.plot(x, df["close"].values, pen=pg.mkPen("w", width=1.5))
@@ -264,7 +273,8 @@ class PriceChart(QWidget):
             self.price_plot.addItem(OHLCItem(ohlc_data))
         elif chart == "Heikin-Ashi":
             ha = heikin_ashi(df)
-            ha_data = [(x[i], ha[i][0], ha[i][1], ha[i][2], ha[i][3]) for i in range(len(ha))]
+            ha_data = list(zip(x, [h[0] for h in ha], [h[1] for h in ha],
+                               [h[2] for h in ha], [h[3] for h in ha]))
             self.price_plot.addItem(CandlestickItem(ha_data))
         else:  # Candlestick
             candle_data = list(zip(x, df["open"].values, df["close"].values,
@@ -298,7 +308,6 @@ class PriceChart(QWidget):
 
         self.selector_plot.plot(x, df["close"].values, pen=pg.mkPen((150, 150, 150), width=1))
 
-        n = len(x)
         self.region.setBounds([0, n - 1])
         if self._first_load:
             self.region.setRegion([max(0, n - 90), n - 1])
