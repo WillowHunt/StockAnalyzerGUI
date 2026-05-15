@@ -8,6 +8,7 @@ from data.predefined import DANISH_STOCKS
 from analysis.backtester import generate_signals, run_backtest, run_atr_backtest, load_signal_details
 from gui.charts.price_chart import PriceChart
 from gui.widgets.backtest_panel import BacktestPanel
+from gui.widgets.news_window import NewsWindow
 
 
 class FetchWorker(QThread):
@@ -67,6 +68,9 @@ class MainWindow(QMainWindow):
         atr_btn.clicked.connect(self._on_atr_backtest)
         atr_btn.setToolTip("Backtest med ATR Trailing Stop som exit-strategi (2× ATR, maks 60 dage)")
 
+        news_btn = QPushButton("Nyheder")
+        news_btn.clicked.connect(self._on_news)
+
         toolbar.addWidget(QLabel("Aktie:"))
         toolbar.addWidget(self.ticker_input)
         toolbar.addWidget(self.stored_combo)
@@ -75,6 +79,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(fetch_btn)
         toolbar.addWidget(backtest_btn)
         toolbar.addWidget(atr_btn)
+        toolbar.addWidget(news_btn)
         toolbar.addStretch()
         layout.addLayout(toolbar)
 
@@ -164,3 +169,11 @@ class MainWindow(QMainWindow):
         label = f"{ticker} — ATR Trailing Stop (2× ATR, maks 60 dage)"
         self.backtest_panel.show_results(label, summary, details)
         self.tabs.setCurrentIndex(1)
+
+    def _on_news(self):
+        ticker = self.ticker_input.text().strip().upper()
+        if not ticker:
+            return
+        date_from, date_to = self.price_chart.get_visible_dates()
+        dlg = NewsWindow(ticker, date_from, date_to, parent=self)
+        dlg.show()

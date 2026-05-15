@@ -6,6 +6,14 @@ import pandas as pd
 import numpy as np
 
 
+def _visible_data(data, vb):
+    if vb is None:
+        return data
+    x_min, x_max = vb.viewRange()[0]
+    lo, hi = int(x_min) - 1, int(x_max) + 2
+    return [d for d in data if lo <= d[0] <= hi]
+
+
 class CandlestickItem(pg.GraphicsObject):
     def __init__(self, data):
         super().__init__()
@@ -16,15 +24,13 @@ class CandlestickItem(pg.GraphicsObject):
             return
         p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         w = 0.4
-        for x, open_, close, low, high in self._data:
+        for x, open_, close, low, high in _visible_data(self._data, self.getViewBox()):
             color = pg.mkColor('#26a69a') if close >= open_ else pg.mkColor('#ef5350')
-
             wick = QPen(color)
             wick.setWidthF(1.0)
             wick.setCosmetic(True)
             p.setPen(wick)
             p.drawLine(QPointF(x, low), QPointF(x, high))
-
             body = QPen(color)
             body.setWidthF(0)
             p.setPen(body)
@@ -50,7 +56,7 @@ class OHLCItem(pg.GraphicsObject):
             return
         p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         w = 0.3
-        for x, open_, close, low, high in self._data:
+        for x, open_, close, low, high in _visible_data(self._data, self.getViewBox()):
             color = pg.mkColor('#26a69a') if close >= open_ else pg.mkColor('#ef5350')
             pen = QPen(color)
             pen.setWidthF(1.0)
@@ -70,19 +76,19 @@ class OHLCItem(pg.GraphicsObject):
 
 
 def heikin_ashi(df: pd.DataFrame) -> list:
-    ha = []
-    prev_open = prev_close = None
-    for _, row in df.iterrows():
-        ha_close = (row["open"] + row["high"] + row["low"] + row["close"]) / 4
-        if prev_open is None:
-            ha_open = (row["open"] + row["close"]) / 2
-        else:
-            ha_open = (prev_open + prev_close) / 2
-        ha_high = max(row["high"], ha_open, ha_close)
-        ha_low = min(row["low"], ha_open, ha_close)
-        ha.append((ha_open, ha_close, ha_low, ha_high))
-        prev_open, prev_close = ha_open, ha_close
-    return ha
+    close = df["close"].values
+    open_ = df["open"].values
+    high = df["high"].values
+    low = df["low"].values
+    n = len(df)
+    ha_close = (open_ + high + low + close) / 4
+    ha_open = np.empty(n)
+    ha_open[0] = (open_[0] + close[0]) / 2
+    for i in range(1, n):
+        ha_open[i] = (ha_open[i - 1] + ha_close[i - 1]) / 2
+    ha_high = np.maximum(high, np.maximum(ha_open, ha_close))
+    ha_low = np.minimum(low, np.minimum(ha_open, ha_close))
+    return list(zip(ha_open, ha_close, ha_low, ha_high))
 
 
 class DateAxis(pg.AxisItem):
@@ -208,6 +214,20 @@ class PriceChart(QWidget):
         self._updating = True
         self.region.setRegion(range_)
         self._updating = False
+
+    def get_visible_dates(self):
+        if self.df is None or self.df.empty:
+            return None, None
+        x_min, x_max = self.region.getRegion()
+        dates = self.df["date"].tolist()
+        n = len(dates)
+        i_min = max(0, int(x_min))
+        i_max = min(n - 1, int(x_max))
+        import datetime
+        def to_dt(d, end=False):
+            t = datetime.time(23, 59, 59) if end else datetime.time()
+            return datetime.datetime.combine(d, t) if hasattr(d, 'year') else d
+        return to_dt(dates[i_min]), to_dt(dates[i_max], end=True)
 
     def plot(self, df: pd.DataFrame, ticker: str = ""):
         self.df = df
