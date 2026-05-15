@@ -1,3 +1,26 @@
+# Mapping fra dansk ticker til Finnhub US ADR/OTC symbol for nyhedssøgning
+FINNHUB_SYMBOL_MAP = {
+    "NOVO-B.CO":    "NVO",
+    "MAERSK-B.CO":  "AMKBY",
+    "MAERSK-A.CO":  "AMKBY",
+    "CARL-B.CO":    "CABGY",
+    "COLO-B.CO":    "CLPBY",
+    "ORSTED.CO":    "DNNGY",
+    "VWS.CO":       "VWSYF",
+    "DEMANT.CO":    "WILYY",
+    "PNDORA.CO":    "PNDRY",
+    "GMAB.CO":      "GMAB",
+    "TRYG.CO":      "TGWAF",
+    "DANSKE.CO":    "DNSKF",
+    "GN.CO":        "GNGSF",
+    "ZEAL.CO":      "ZLDPF",
+    "FLS.CO":       "FLIDY",
+    "BAVA.CO":      "BVNRY",
+    "ALK-B.CO":     "AKABY",
+    "NKT.CO":       "NKTSF",
+    "NSIS-B.CO":    "NVZMY",
+}
+
 DANISH_STOCKS = {
     "NOVO-B.CO": "Novo Nordisk B",
     "DSV.CO": "DSV",
