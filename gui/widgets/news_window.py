@@ -1,8 +1,11 @@
 import yfinance as yf
 import finnhub
 import datetime
+import hashlib
 from config import FINNHUB_API_KEY
 from data.predefined import FINNHUB_SYMBOL_MAP
+from database.connection import get_session
+from database.models import NewsArticle
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QCheckBox, QHeaderView, QAbstractItemView
@@ -13,6 +16,44 @@ from PyQt6.QtGui import QDesktopServices, QColor, QFont
 
 def _is_danish(ticker: str) -> bool:
     return ticker.upper().endswith(".CO")
+
+
+def _url_hash(url: str) -> str:
+    return hashlib.md5(url.encode()).hexdigest()
+
+
+def _load_from_db(ticker: str) -> list:
+    session = get_session()
+    try:
+        rows = session.query(NewsArticle).filter_by(ticker=ticker).order_by(NewsArticle.date.desc()).all()
+        return [{"date": r.date, "title": r.title, "source": r.source, "url": r.url} for r in rows]
+    finally:
+        session.close()
+
+
+def _save_to_db(ticker: str, source_symbol: str, articles: list):
+    session = get_session()
+    try:
+        existing = {r.url_hash for r in session.query(NewsArticle.url_hash).filter_by(ticker=ticker).all()}
+        new_rows = []
+        for a in articles:
+            h = _url_hash(a["url"])
+            if h not in existing:
+                new_rows.append(NewsArticle(
+                    ticker=ticker,
+                    source_symbol=source_symbol,
+                    date=a["date"],
+                    title=a["title"],
+                    source=a["source"],
+                    url=a["url"],
+                    url_hash=h,
+                ))
+        if new_rows:
+            session.bulk_save_objects(new_rows)
+            session.commit()
+        return len(new_rows)
+    finally:
+        session.close()
 
 
 def _fetch_finnhub(ticker: str, date_from: datetime.datetime, date_to: datetime.datetime) -> list:
@@ -115,22 +156,30 @@ class NewsWindow(QDialog):
         finnhub_symbol = FINNHUB_SYMBOL_MAP.get(self.ticker.upper()) if _is_danish(self.ticker) else self.ticker
         use_finnhub = bool(FINNHUB_API_KEY and finnhub_symbol)
 
+        cached = _load_from_db(self.ticker)
+
         if use_finnhub:
-            self._all_articles = _fetch_finnhub(finnhub_symbol, self.date_from, self.date_to)
+            fresh = _fetch_finnhub(finnhub_symbol, self.date_from, self.date_to)
+            new_count = _save_to_db(self.ticker, finnhub_symbol, fresh)
+            source_note = f"Finnhub ({finnhub_symbol})"
             if _is_danish(self.ticker):
-                source_note = f"Finnhub ({finnhub_symbol} — US ADR/OTC)"
-            else:
-                source_note = "Finnhub"
+                source_note += " — US ADR/OTC"
         else:
-            self._all_articles = _fetch_yfinance(self.ticker)
+            fresh = _fetch_yfinance(self.ticker)
+            new_count = _save_to_db(self.ticker, self.ticker, fresh)
             source_note = "Yahoo Finance (kun seneste nyheder)"
+
+        # Merge: DB-cache er komplet, fresh kan have overlap — brug DB som kilde
+        all_articles = _load_from_db(self.ticker)
+        self._all_articles = sorted(all_articles, key=lambda a: a["date"] or datetime.datetime.min, reverse=True)
+        cache_note = f"  ·  {len(cached)} gemt, {new_count} nye"
 
         range_str = ""
         if self.date_from and self.date_to:
             range_str = f"  ·  {self.date_from.strftime('%d %b %Y')} → {self.date_to.strftime('%d %b %Y')}"
 
         self.title_label.setText(
-            f"{self.ticker} — {len(self._all_articles)} artikler  ·  Kilde: {source_note}{range_str}"
+            f"{self.ticker} — {len(self._all_articles)} artikler  ·  {source_note}{cache_note}{range_str}"
         )
         self._apply_filter()
 

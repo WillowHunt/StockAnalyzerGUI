@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -68,3 +68,19 @@ class Signal(Base):
     is_success = Column(Boolean)     # True if signal was profitable
 
     stock = relationship("Stock", back_populates="signals")
+
+
+class NewsArticle(Base):
+    __tablename__ = "news"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(20), nullable=False)
+    source_symbol = Column(String(20))
+    date = Column(DateTime)
+    title = Column(String(500), nullable=False)
+    source = Column(String(100))
+    url = Column(String(1000), nullable=False)
+    url_hash = Column(String(32), nullable=False)
+    fetched_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (UniqueConstraint("ticker", "url_hash", name="uq_news_ticker_url"),)
