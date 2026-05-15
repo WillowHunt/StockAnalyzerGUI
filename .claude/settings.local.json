@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip3 --version)",
+      "Bash(mysql --version)",
+      "Bash(dpkg -l mysql-server)",
+      "Bash(systemctl is-active *)",
+      "Bash(sudo systemctl start mysql)",
+      "Bash(pip3 install *)",
+      "Bash(mysql -u root -e \"SELECT 1;\")",
+      "Bash(dpkg -l)",
+      "Bash(sudo mysql *)",
+      "Bash(mysql *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(DISPLAY=:0 python3 main.py)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(jobs -l)",
+      "Bash(pkill -f \"python3 main.py\")",
+      "Bash(DISPLAY=:0 python3 /home/alex/develop/StockAnalyzerGUI/main.py)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"python3 /home/alex/develop/StockAnalyzerGUI/main.py\")",
+      "Bash(chmod +x *)",
+      "Bash(pkill -f \"python3.*main.py\")",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
