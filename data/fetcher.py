@@ -94,7 +94,11 @@ def load_prices(ticker: str) -> pd.DataFrame:
         stock = session.query(Stock).filter_by(ticker=ticker).first()
         if not stock:
             return pd.DataFrame()
-        rows = session.query(Price).filter_by(stock_id=stock.id).order_by(Price.date).all()
+        rows = (session.query(Price)
+                .filter_by(stock_id=stock.id)
+                .filter(Price.close.isnot(None))
+                .order_by(Price.date)
+                .all())
         return pd.DataFrame([{
             "date": r.date, "open": r.open, "high": r.high, "low": r.low,
             "close": r.close, "volume": r.volume,

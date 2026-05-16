@@ -1,17 +1,32 @@
-import sys
-from PyQt6.QtWidgets import QApplication
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database.connection import init_db
-from gui.main_window import MainWindow
+from api.stocks import router as stocks_router
+from api.analysis import router as analysis_router
+from api.news import router as news_router
+from api.web import router as web_router
+from api.compare import router as compare_router
+
+app = FastAPI(title="Stock Analyzer", version="2.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-def main():
+@app.on_event("startup")
+def startup():
     init_db()
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
 
 
-if __name__ == "__main__":
-    main()
+app.include_router(web_router)
+app.include_router(stocks_router)
+app.include_router(analysis_router)
+app.include_router(news_router)
+app.include_router(compare_router)

@@ -1,0 +1,46 @@
+{% if signals %}
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Dato</th>
+                <th>Type</th>
+                <th>Indikator</th>
+                <th>Pris</th>
+                <th>Udfald dato</th>
+                <th>Afkast %</th>
+                <th>Resultat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in signals | reverse %}
+            <tr>
+                <td>{{ s.date }}</td>
+                <td>
+                    <span class="badge {{ 'badge-buy' if s.signal_type == 'BUY' else 'badge-sell' }}">
+                        {{ s.signal_type }}
+                    </span>
+                </td>
+                <td>{{ s.indicator }}</td>
+                <td>{{ "%.2f"|format(s.price) if s.price else "—" }}</td>
+                <td>{{ s.outcome_date or "—" }}</td>
+                <td class="{{ 'pos' if s.outcome_pct and s.outcome_pct > 0 else 'neg' if s.outcome_pct and s.outcome_pct < 0 else '' }}">
+                    {{ "%.2f%%"|format(s.outcome_pct) if s.outcome_pct is not none else "—" }}
+                </td>
+                <td>
+                    {% if s.is_success is not none %}
+                    <span class="{{ 'pos' if s.is_success else 'neg' }}">
+                        {{ "✓" if s.is_success else "✗" }}
+                    </span>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-tab">
+    <p>Ingen signaler for {{ ticker }}.<br>Klik "Generer signaler" for at beregne.</p>
+</div>
+{% endif %}

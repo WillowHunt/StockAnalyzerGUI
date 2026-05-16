@@ -31,7 +31,11 @@
       "Bash(gh repo *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(pkill -f \"python.*main.py\")",
+      "Bash(echo \"PID: $!\")",
+      "Bash(echo \"started PID $!\")",
+      "Bash(cp *)"
     ]
   }
 }

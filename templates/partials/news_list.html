@@ -1,0 +1,17 @@
+{% if articles %}
+<div class="news-list">
+    {% for a in articles %}
+    <a href="{{ a.url }}" target="_blank" rel="noopener" class="news-item">
+        <div class="news-meta">
+            <span class="news-date">{{ a.date.strftime('%d %b %Y') if a.date else '—' }}</span>
+            <span class="news-source">{{ a.source or '—' }}</span>
+        </div>
+        <div class="news-title">{{ a.title }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-tab">
+    <p>Ingen nyheder gemt for {{ ticker }}.<br>Klik "Hent nyheder" for at opdatere.</p>
+</div>
+{% endif %}

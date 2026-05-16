@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analyzer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <span class="logo">Stock Analyzer</span>
+        <input type="text" id="search" class="search-input" placeholder="Filtrer aktier..." oninput="filterStocks(this.value)">
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span>Aktier</span>
+                <button class="btn-icon" title="Tilføj aktie" onclick="showFetchDialog()">+</button>
+            </div>
+            <div id="stock-list">
+                {% for ticker, name, span in stocks %}
+                <div class="stock-item"
+                     hx-get="/view/{{ ticker }}"
+                     hx-target="#main"
+                     hx-swap="innerHTML"
+                     hx-indicator="#spinner"
+                     onclick="setActive(this)"
+                     data-ticker="{{ ticker }}"
+                     data-name="{{ name | lower }}">
+                    <div class="stock-item-inner">
+                        <span class="stock-ticker">{{ ticker }}</span>
+                        <span class="stock-name">{{ name }}</span>
+                    </div>
+                    {% if span %}<span class="stock-span">{{ span }}</span>{% endif %}
+                </div>
+                {% else %}
+                <p class="sidebar-empty">Ingen aktier gemt endnu.<br>Brug + knappen for at tilføje.</p>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <main id="main" class="main-content">
+            <div class="empty-state">
+                <div class="empty-icon">&#8964;</div>
+                <p>Vælg en aktie i listen til venstre</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Fetch dialog -->
+    <div id="fetch-dialog" class="dialog-overlay" style="display:none">
+        <div class="dialog">
+            <h3>Hent aktiedata</h3>
+            <label>Ticker (fx AAPL, NOVO-B.CO)</label>
+            <input type="text" id="fetch-ticker" placeholder="AAPL" style="text-transform:uppercase">
+            <label>Periode</label>
+            <select id="fetch-period">
+                <option value="1y">1 år</option>
+                <option value="2y">2 år</option>
+                <option value="5y">5 år</option>
+                <option value="max">Max</option>
+            </select>
+            <div class="dialog-actions">
+                <button class="btn-secondary" onclick="hideFetchDialog()">Annuller</button>
+                <button class="btn-primary" onclick="fetchNewStock()">Hent</button>
+            </div>
+            <p id="fetch-status" class="fetch-status"></p>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <div id="spinner" class="htmx-indicator spinner"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

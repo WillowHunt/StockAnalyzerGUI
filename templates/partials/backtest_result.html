@@ -1,0 +1,60 @@
+<div class="backtest-wrapper">
+    <div class="backtest-controls">
+        <label>Hold-periode (dage):
+            <input type="number" id="hold-days-input" value="{{ hold_days }}" min="1" max="365"
+                   style="width:70px; margin-left:8px">
+        </label>
+        <button class="btn-primary"
+                onclick="reloadBacktest('{{ ticker }}', document.getElementById('hold-days-input').value)">
+            Kør igen
+        </button>
+    </div>
+
+    {% if summary %}
+    <h4>Fast hold-periode ({{ hold_days }} dage)</h4>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr><th>Signal</th><th>Total</th><th>Succes</th><th>Fejl</th><th>Hit rate</th><th>Gns. afkast</th></tr>
+            </thead>
+            <tbody>
+                {% for key, row in summary.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ row.total }}</td>
+                    <td class="pos">{{ row.success }}</td>
+                    <td class="neg">{{ row.fail }}</td>
+                    <td class="{{ 'pos' if row.success_rate >= 50 else 'neg' }}">{{ row.success_rate }}%</td>
+                    <td class="{{ 'pos' if row.avg_pct >= 0 else 'neg' }}">{{ "%.2f%%"|format(row.avg_pct) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-tab">Ingen backtest-data. Generer signaler først.</p>
+    {% endif %}
+
+    {% if atr_summary %}
+    <h4 style="margin-top:24px">ATR Trailing Stop</h4>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr><th>Signal</th><th>Total</th><th>Succes</th><th>Fejl</th><th>Hit rate</th><th>Gns. afkast</th></tr>
+            </thead>
+            <tbody>
+                {% for key, row in atr_summary.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ row.total }}</td>
+                    <td class="pos">{{ row.success }}</td>
+                    <td class="neg">{{ row.fail }}</td>
+                    <td class="{{ 'pos' if row.success_rate >= 50 else 'neg' }}">{{ row.success_rate }}%</td>
+                    <td class="{{ 'pos' if row.avg_pct >= 0 else 'neg' }}">{{ "%.2f%%"|format(row.avg_pct) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>

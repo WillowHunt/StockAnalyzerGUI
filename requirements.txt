@@ -1,8 +1,9 @@
-PyQt6>=6.6.0
-PyQtGraph>=0.13.3
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
 SQLAlchemy>=2.0.0
 PyMySQL>=1.1.0
 pandas>=2.1.0
 yfinance>=0.2.36
 ta>=0.11.0
 python-dotenv>=1.0.0
+finnhub-python>=2.4.0

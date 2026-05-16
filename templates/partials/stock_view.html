@@ -1,0 +1,79 @@
+<div class="stock-view">
+    <div class="stock-header">
+        <h2 id="stock-title">{{ ticker }}</h2>
+        <div class="header-actions">
+<button class="btn-primary"
+                    hx-post="/api/stocks/{{ ticker }}/fetch"
+                    hx-swap="none"
+                    hx-on::after-request="handleFetch(event, '{{ ticker }}')">
+                Opdater data
+            </button>
+            <button class="btn-secondary"
+                    hx-post="/api/stocks/{{ ticker }}/signals"
+                    hx-swap="none"
+                    hx-on::after-request="handleSignals(event, '{{ ticker }}')">
+                Generer signaler
+            </button>
+        </div>
+    </div>
+
+    <div id="chart-wrapper" class="chart-wrapper">
+        <div class="chart-toolbar">
+            <div class="chart-type-group">
+                <button class="chart-type-btn active" onclick="setChartType(this,'candlestick')" title="Candlestick">&#9646;&#9645;</button>
+                <button class="chart-type-btn" onclick="setChartType(this,'ohlc')" title="OHLC">&#124;</button>
+                <button class="chart-type-btn" onclick="setChartType(this,'line')" title="Linje">&#8725;</button>
+                <button class="chart-type-btn" onclick="setChartType(this,'area')" title="Areal">&#9651;</button>
+            </div>
+            <div class="compare-section">
+                <div id="compare-chips"></div>
+                <div class="compare-presets">
+                    <button class="compare-preset-btn" onclick="addCompareTicker('^OMXC25')" title="OMX Copenhagen 25">C25</button>
+                    <button class="compare-preset-btn" onclick="addCompareTicker('^GSPC')" title="S&amp;P 500">S&amp;P</button>
+                    <button class="compare-preset-btn" onclick="addCompareTicker('^STOXX50E')" title="Euro Stoxx 50">STOXX</button>
+                </div>
+                <input type="text" id="compare-input" class="compare-input"
+                       placeholder="Ticker…"
+                       onkeydown="handleCompareInput(event)"
+                       autocomplete="off" spellcheck="false">
+            </div>
+        </div>
+        <div id="price-chart"></div>
+        <div id="rsi-chart"></div>
+        <div id="macd-chart"></div>
+    </div>
+
+    <div class="tabs-bar">
+        <button class="tab-btn active"
+                hx-get="/partials/signals/{{ ticker }}"
+                hx-target="#tab-content"
+                hx-swap="innerHTML"
+                onclick="setTab(this)">
+            Signaler
+        </button>
+        <button class="tab-btn"
+                hx-get="/partials/news/{{ ticker }}"
+                hx-target="#tab-content"
+                hx-swap="innerHTML"
+                onclick="setTab(this)">
+            Nyheder
+        </button>
+        <button class="tab-btn"
+                hx-get="/partials/backtest/{{ ticker }}"
+                hx-target="#tab-content"
+                hx-swap="innerHTML"
+                onclick="setTab(this)">
+            Backtest
+        </button>
+        <button class="tab-btn"
+                onclick="setTab(this); fetchTickerNews('{{ ticker }}')">
+            Hent nyheder
+        </button>
+    </div>
+
+    <div id="tab-content" class="tab-content">
+        <div class="loading-text">Indlæser signaler...</div>
+    </div>
+
+    <div id="chart-trigger" data-ticker="{{ ticker }}" data-limit="0" style="display:none"></div>
+</div>
