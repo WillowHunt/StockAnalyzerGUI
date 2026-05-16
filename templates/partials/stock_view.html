@@ -38,6 +38,22 @@
                        autocomplete="off" spellcheck="false">
             </div>
         </div>
+        <div class="indicator-toolbar">
+            <div class="indicator-group">
+                <button class="ind-btn active" data-indicator="sma20"   onclick="toggleIndicator('sma20')">SMA 20</button>
+                <button class="ind-btn active" data-indicator="sma50"   onclick="toggleIndicator('sma50')">SMA 50</button>
+                <button class="ind-btn active" data-indicator="sma200"  onclick="toggleIndicator('sma200')">SMA 200</button>
+                <button class="ind-btn active" data-indicator="bb"      onclick="toggleIndicator('bb')">BB</button>
+                <button class="ind-btn active" data-indicator="volume"  onclick="toggleIndicator('volume')">Vol</button>
+                <button class="ind-btn active" data-indicator="signals" onclick="toggleIndicator('signals')">Signaler</button>
+            </div>
+            <div class="indicator-sep"></div>
+            <div class="indicator-group">
+                <button class="ind-btn active" data-indicator="rsi"   onclick="toggleIndicator('rsi')">RSI</button>
+                <button class="ind-btn active" data-indicator="macd"  onclick="toggleIndicator('macd')">MACD</button>
+                <button class="ind-btn active" data-indicator="stoch" onclick="toggleIndicator('stoch')">Stoch</button>
+            </div>
+        </div>
         <div id="price-chart"></div>
         <div id="rsi-chart"></div>
         <div id="macd-chart"></div>

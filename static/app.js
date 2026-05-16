@@ -11,6 +11,12 @@ const TEXT   = '#cdd6f4';
 const ACCENT = '#26a69a';
 const COMPARE_COLORS = ['#f9e2af', '#a6e3a1', '#cba6f7', '#89dceb', '#fab387'];
 
+let visibleIndicators = {
+    sma20: true, sma50: true, sma200: true,
+    bb: true, volume: true, signals: true,
+    rsi: true, macd: true, stoch: true,
+};
+
 function setChartType(btn, type) {
     document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -59,12 +65,19 @@ function renderCharts(prices, signals, preserveRange = null) {
 
     Plotly.newPlot('price-chart', buildPriceTraces(prices, signals, dates, xRange),
                    buildPriceLayout(xRange, yRange), config);
-    Plotly.newPlot('rsi-chart',   buildRsiTraces(prices, dates),
-                   buildSubLayout(xRange, 'RSI',   false), config);
-    Plotly.newPlot('macd-chart',  buildMacdTraces(prices, dates),
-                   buildSubLayout(xRange, 'MACD',  false), config);
-    Plotly.newPlot('stoch-chart', buildStochTraces(prices, dates),
-                   buildSubLayout(xRange, 'Stoch', true),  config);
+
+    const subcharts = [
+        { key: 'rsi',   id: 'rsi-chart',   traces: () => buildRsiTraces(prices, dates),   title: 'RSI'   },
+        { key: 'macd',  id: 'macd-chart',  traces: () => buildMacdTraces(prices, dates),  title: 'MACD'  },
+        { key: 'stoch', id: 'stoch-chart', traces: () => buildStochTraces(prices, dates), title: 'Stoch' },
+    ];
+    const lastVisible = [...subcharts].reverse().find(s => visibleIndicators[s.key]);
+    for (const s of subcharts) {
+        const el = document.getElementById(s.id);
+        if (!visibleIndicators[s.key]) { el.style.display = 'none'; continue; }
+        el.style.display = '';
+        Plotly.newPlot(s.id, s.traces(), buildSubLayout(xRange, s.title, s === lastVisible), config);
+    }
 
     attachChartSync(prices, signals);
 }
@@ -132,14 +145,15 @@ function buildPriceLayout(xRange, yRange) {
             title: { text: '% afkast', font: { size: 10 } },
             ticksuffix: '%', zeroline: true, zerolinecolor: GRID,
         } : {
-            gridcolor: GRID, domain: [0.24, 1], range: yRange, rangemode: 'normal',
+            gridcolor: GRID, rangemode: 'normal', range: yRange,
+            domain: (!hasCompare && visibleIndicators.volume) ? [0.24, 1] : [0, 1],
         },
-        ...(hasCompare ? {} : {
+        ...(!hasCompare && visibleIndicators.volume ? {
             yaxis2: {
                 domain: [0, 0.21], showgrid: false,
                 showticklabels: false, fixedrange: true, autorange: true,
             },
-        }),
+        } : {}),
         legend: { bgcolor: 'rgba(0,0,0,0)', bordercolor: GRID, x: 0, y: 1, font: { size: 10 } },
         showlegend: true,
     };
@@ -210,10 +224,10 @@ function attachChartSync(prices, signals) {
         const promises  = [];
         const xUpdate   = { 'xaxis.range[0]': x0, 'xaxis.range[1]': x1 };
 
-        // Always sync sub-charts
-        promises.push(Plotly.relayout('rsi-chart',   xUpdate));
-        promises.push(Plotly.relayout('macd-chart',  xUpdate));
-        promises.push(Plotly.relayout('stoch-chart', xUpdate));
+        // Sync visible sub-charts
+        for (const [key, id] of [['rsi','rsi-chart'],['macd','macd-chart'],['stoch','stoch-chart']]) {
+            if (visibleIndicators[key]) promises.push(Plotly.relayout(id, xUpdate));
+        }
 
         if (hasCompare) {
             // Re-normalize from new left edge, update price chart via react
@@ -272,23 +286,26 @@ function buildPriceTraces(prices, signals, dates, xRange) {
     }
 
     // Bollinger Bands fill
-    traces.push({
-        type: 'scatter', mode: 'lines', x: dates, y: prices.map(p => p.bb_upper),
-        name: 'BB Upper', showlegend: false,
-        line: { color: 'rgba(100,100,150,0.4)', width: 1 },
-    });
-    traces.push({
-        type: 'scatter', mode: 'lines', x: dates, y: prices.map(p => p.bb_lower),
-        name: 'BB', line: { color: 'rgba(100,100,150,0.4)', width: 1 },
-        fill: 'tonexty', fillcolor: 'rgba(100,100,150,0.06)',
-    });
+    if (visibleIndicators.bb) {
+        traces.push({
+            type: 'scatter', mode: 'lines', x: dates, y: prices.map(p => p.bb_upper),
+            name: 'BB Upper', showlegend: false,
+            line: { color: 'rgba(100,100,150,0.4)', width: 1 },
+        });
+        traces.push({
+            type: 'scatter', mode: 'lines', x: dates, y: prices.map(p => p.bb_lower),
+            name: 'BB', line: { color: 'rgba(100,100,150,0.4)', width: 1 },
+            fill: 'tonexty', fillcolor: 'rgba(100,100,150,0.06)',
+        });
+    }
 
     // SMA lines
-    for (const { key, color, label, width } of [
-        { key: 'sma_20',  color: '#ff9800', label: 'SMA 20',  width: 1   },
-        { key: 'sma_50',  color: '#00e5ff', label: 'SMA 50',  width: 1   },
-        { key: 'sma_200', color: '#e040fb', label: 'SMA 200', width: 1.5 },
+    for (const { key, indKey, color, label, width } of [
+        { key: 'sma_20',  indKey: 'sma20',  color: '#ff9800', label: 'SMA 20',  width: 1   },
+        { key: 'sma_50',  indKey: 'sma50',  color: '#00e5ff', label: 'SMA 50',  width: 1   },
+        { key: 'sma_200', indKey: 'sma200', color: '#e040fb', label: 'SMA 200', width: 1.5 },
     ]) {
+        if (!visibleIndicators[indKey]) continue;
         traces.push({
             type: 'scatter', mode: 'lines',
             x: dates, y: prices.map(p => p[key]),
@@ -297,36 +314,40 @@ function buildPriceTraces(prices, signals, dates, xRange) {
     }
 
     // Volume bars (bottom panel, yaxis2)
-    traces.push({
-        type: 'bar', x: dates, y: prices.map(p => p.volume),
-        yaxis: 'y2', name: 'Volumen', showlegend: false,
-        marker: {
-            color: prices.map(p =>
-                (p.close ?? 0) >= (p.open ?? 0)
-                    ? 'rgba(38,166,154,0.45)'
-                    : 'rgba(239,83,80,0.45)'
-            ),
-        },
-    });
-
-    // Signal markers
-    const buys  = signals.filter(s => s.signal_type === 'BUY');
-    const sells = signals.filter(s => s.signal_type === 'SELL');
-    if (buys.length) {
+    if (visibleIndicators.volume) {
         traces.push({
-            type: 'scatter', mode: 'markers',
-            x: buys.map(s => s.date), y: buys.map(s => s.price),
-            name: 'BUY',
-            marker: { symbol: 'triangle-up', size: 9, color: '#26a69a', line: { width: 0 } },
+            type: 'bar', x: dates, y: prices.map(p => p.volume),
+            yaxis: 'y2', name: 'Volumen', showlegend: false,
+            marker: {
+                color: prices.map(p =>
+                    (p.close ?? 0) >= (p.open ?? 0)
+                        ? 'rgba(38,166,154,0.45)'
+                        : 'rgba(239,83,80,0.45)'
+                ),
+            },
         });
     }
-    if (sells.length) {
-        traces.push({
-            type: 'scatter', mode: 'markers',
-            x: sells.map(s => s.date), y: sells.map(s => s.price),
-            name: 'SELL',
-            marker: { symbol: 'triangle-down', size: 9, color: '#ef5350', line: { width: 0 } },
-        });
+
+    // Signal markers
+    if (visibleIndicators.signals) {
+        const buys  = signals.filter(s => s.signal_type === 'BUY');
+        const sells = signals.filter(s => s.signal_type === 'SELL');
+        if (buys.length) {
+            traces.push({
+                type: 'scatter', mode: 'markers',
+                x: buys.map(s => s.date), y: buys.map(s => s.price),
+                name: 'BUY',
+                marker: { symbol: 'triangle-up', size: 9, color: '#26a69a', line: { width: 0 } },
+            });
+        }
+        if (sells.length) {
+            traces.push({
+                type: 'scatter', mode: 'markers',
+                x: sells.map(s => s.date), y: sells.map(s => s.price),
+                name: 'SELL',
+                marker: { symbol: 'triangle-down', size: 9, color: '#ef5350', line: { width: 0 } },
+            });
+        }
     }
 
     return traces;
@@ -506,6 +527,26 @@ function handleCompareInput(event) {
     if (ticker) addCompareTicker(ticker);
 }
 
+// ── Indicator toggles ─────────────────────────────────────────────────────────
+
+function toggleIndicator(key) {
+    visibleIndicators[key] = !visibleIndicators[key];
+    document.querySelectorAll(`.ind-btn[data-indicator="${key}"]`).forEach(btn =>
+        btn.classList.toggle('active', visibleIndicators[key])
+    );
+    if (currentPrices.length) {
+        const saved = document.getElementById('price-chart')?._fullLayout?.xaxis?.range?.slice() ?? null;
+        renderCharts(currentPrices, currentSignals, saved);
+    }
+}
+
+function syncIndicatorButtons() {
+    document.querySelectorAll('.ind-btn[data-indicator]').forEach(btn => {
+        const key = btn.dataset.indicator;
+        btn.classList.toggle('active', visibleIndicators[key] !== false);
+    });
+}
+
 // ── HTMX afterSwap — start chart after stock view is injected ────────────────
 
 document.body.addEventListener('htmx:afterSwap', function (evt) {
@@ -516,6 +557,7 @@ document.body.addEventListener('htmx:afterSwap', function (evt) {
     const limit  = parseInt(trigger.dataset.limit);   // 0 = all data
     compareData  = {};
     renderCompareChips();
+    syncIndicatorButtons();
     loadChart(ticker, limit);
     htmx.ajax('GET', `/partials/signals/${ticker}`, { target: '#tab-content', swap: 'innerHTML' });
 });
