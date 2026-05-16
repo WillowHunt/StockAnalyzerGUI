@@ -60,9 +60,11 @@ function renderCharts(prices, signals, preserveRange = null) {
     Plotly.newPlot('price-chart', buildPriceTraces(prices, signals, dates, xRange),
                    buildPriceLayout(xRange, yRange), config);
     Plotly.newPlot('rsi-chart',   buildRsiTraces(prices, dates),
-                   buildSubLayout(xRange, 'RSI',  false), config);
+                   buildSubLayout(xRange, 'RSI',   false), config);
     Plotly.newPlot('macd-chart',  buildMacdTraces(prices, dates),
-                   buildSubLayout(xRange, 'MACD', true),  config);
+                   buildSubLayout(xRange, 'MACD',  false), config);
+    Plotly.newPlot('stoch-chart', buildStochTraces(prices, dates),
+                   buildSubLayout(xRange, 'Stoch', true),  config);
 
     attachChartSync(prices, signals);
 }
@@ -157,7 +159,7 @@ function buildSubLayout(xRange, title, showXLabels) {
         yaxis: {
             gridcolor: GRID,
             title: { text: title, font: { size: 10 } },
-            ...(title === 'RSI' ? { range: [0, 100] } : {}),
+            ...(['RSI', 'Stoch'].includes(title) ? { range: [0, 100] } : {}),
         },
         showlegend: false,
     };
@@ -209,8 +211,9 @@ function attachChartSync(prices, signals) {
         const xUpdate   = { 'xaxis.range[0]': x0, 'xaxis.range[1]': x1 };
 
         // Always sync sub-charts
-        promises.push(Plotly.relayout('rsi-chart',  xUpdate));
-        promises.push(Plotly.relayout('macd-chart', xUpdate));
+        promises.push(Plotly.relayout('rsi-chart',   xUpdate));
+        promises.push(Plotly.relayout('macd-chart',  xUpdate));
+        promises.push(Plotly.relayout('stoch-chart', xUpdate));
 
         if (hasCompare) {
             // Re-normalize from new left edge, update price chart via react
@@ -404,6 +407,29 @@ function buildMacdTraces(prices, dates) {
             type: 'scatter', mode: 'lines',
             x: dates, y: prices.map(p => p.macd_signal),
             name: 'Signal', line: { color: '#f9e2af', width: 1 },
+        },
+    ];
+}
+
+function buildStochTraces(prices, dates) {
+    return [
+        {
+            type: 'scatter', mode: 'lines',
+            x: dates, y: prices.map(p => p.stoch_k),
+            name: '%K', line: { color: '#89b4fa', width: 1.5 },
+        },
+        {
+            type: 'scatter', mode: 'lines',
+            x: dates, y: prices.map(p => p.stoch_d),
+            name: '%D', line: { color: '#f9e2af', width: 1, dash: 'dot' },
+        },
+        {
+            type: 'scatter', mode: 'lines', x: dates, y: dates.map(() => 80),
+            name: '80', line: { color: '#ef5350', width: 1, dash: 'dot' }, showlegend: false,
+        },
+        {
+            type: 'scatter', mode: 'lines', x: dates, y: dates.map(() => 20),
+            name: '20', line: { color: '#26a69a', width: 1, dash: 'dot' }, showlegend: false,
         },
     ];
 }

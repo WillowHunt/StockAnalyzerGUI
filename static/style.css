@@ -116,9 +116,10 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
 
 /* Chart */
 .chart-wrapper { padding: 12px 20px 0; flex-shrink: 0; }
-#price-chart, #rsi-chart, #macd-chart { width: 100%; display: block; }
-#rsi-chart  { margin-top: -8px; }
-#macd-chart { margin-top: -8px; margin-bottom: 12px; }
+#price-chart, #rsi-chart, #macd-chart, #stoch-chart { width: 100%; display: block; }
+#rsi-chart   { margin-top: -8px; }
+#macd-chart  { margin-top: -8px; }
+#stoch-chart { margin-top: -8px; margin-bottom: 12px; }
 
 .chart-toolbar {
     display: flex; align-items: center; gap: 12px;
