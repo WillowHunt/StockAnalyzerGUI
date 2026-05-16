@@ -130,8 +130,14 @@ function buildPriceLayout(xRange, yRange) {
             title: { text: '% afkast', font: { size: 10 } },
             ticksuffix: '%', zeroline: true, zerolinecolor: GRID,
         } : {
-            gridcolor: GRID, range: yRange, rangemode: 'normal',
+            gridcolor: GRID, domain: [0.24, 1], range: yRange, rangemode: 'normal',
         },
+        ...(hasCompare ? {} : {
+            yaxis2: {
+                domain: [0, 0.21], showgrid: false,
+                showticklabels: false, fixedrange: true, autorange: true,
+            },
+        }),
         legend: { bgcolor: 'rgba(0,0,0,0)', bordercolor: GRID, x: 0, y: 1, font: { size: 10 } },
         showlegend: true,
     };
@@ -286,6 +292,19 @@ function buildPriceTraces(prices, signals, dates, xRange) {
             name: label, line: { color, width },
         });
     }
+
+    // Volume bars (bottom panel, yaxis2)
+    traces.push({
+        type: 'bar', x: dates, y: prices.map(p => p.volume),
+        yaxis: 'y2', name: 'Volumen', showlegend: false,
+        marker: {
+            color: prices.map(p =>
+                (p.close ?? 0) >= (p.open ?? 0)
+                    ? 'rgba(38,166,154,0.45)'
+                    : 'rgba(239,83,80,0.45)'
+            ),
+        },
+    });
 
     // Signal markers
     const buys  = signals.filter(s => s.signal_type === 'BUY');
