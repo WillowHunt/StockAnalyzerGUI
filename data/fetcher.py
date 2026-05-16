@@ -103,6 +103,7 @@ def load_prices(ticker: str) -> pd.DataFrame:
             "date": r.date, "open": r.open, "high": r.high, "low": r.low,
             "close": r.close, "volume": r.volume,
             "sma_20": r.sma_20, "sma_50": r.sma_50, "sma_200": r.sma_200,
+            "ema_12": r.ema_12, "ema_26": r.ema_26,
             "rsi_14": r.rsi_14, "macd": r.macd, "macd_signal": r.macd_signal,
             "macd_hist": r.macd_hist, "bb_upper": r.bb_upper, "bb_lower": r.bb_lower,
             "atr_14": r.atr_14, "stoch_k": r.stoch_k, "stoch_d": r.stoch_d,
